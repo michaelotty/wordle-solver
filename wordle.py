@@ -22,17 +22,31 @@ def wordle(starting_word: str,
     if black:
         grey = set(grey) - set(black)
     words = set()
-    starting_word = starting_word + '-_=+'
+
+    filler_letters = '-_=+'
+
+    starting_word = starting_word + filler_letters
     starting_word = starting_word[:5]
-    for letter1, letter2, letter3 in itertools.product(grey, repeat=3):
-        words |= {
-            ''.join(x)
-            for x in itertools.permutations(
-                starting_word.replace('-', letter1).replace('_', letter2).
-                replace('=', letter3))  # .replace('+', letter4))
-            if any(
-                ((a in b) or (a not in c)) for a, b, c in zip(x, ins, not_ins))
-        }
+    grey_letter = ['*', '*', '*', '*']
+
+    for i, _ in enumerate(grey_letter):
+        if filler_letters[i] in starting_word:
+            grey_letter[i] = grey
+
+    for let1 in grey_letter[0]:
+        for let2 in grey_letter[1]:
+            for let3 in grey_letter[2]:
+                for let4 in grey_letter[3]:
+                    words |= {
+                        ''.join(x)
+                        for x in itertools.permutations(
+                            starting_word.replace('-', let1).replace(
+                                '_', let2).replace('=', let3).replace(
+                                    '+', let4))
+                        if all(((a in b) or (a not in c))
+                               for a, b, c in zip(x, ins, not_ins))
+                    }
+
     with open('wordle-allowed-guesses.json', encoding='utf-8') as file:
         allowed_words = set(json.load(file))
 
@@ -40,8 +54,8 @@ def wordle(starting_word: str,
 
 
 if __name__ == "__main__":
-    print(
-        wordle(starting_word='au',
-               ins=['', '', '', '', ''],
-               not_ins=['', '', 'a', 'u', ''],
-               black='eroghlcn'))
+    print(*wordle(starting_word='rali',
+                  ins=['', '', 'a', '', ''],
+                  not_ins=['', 'r', '', '', 'l'],
+                  black='cneghous'),
+          sep=', ')
