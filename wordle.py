@@ -1,38 +1,80 @@
-"""Wordle solver."""
+"""A Wordle solver.
 
-import json
+Contains a single function for finding wordle solutions.
+
+Examples:
+    >>> wordle(starting_word='rgo',
+    ...        greens=['', '', '', '', ''],
+    ...        oranges=['g', 'r', 'og', 'o', 'r'],
+    ...        blacks='canehul')
+    ['borgo', 'forgo', 'porgy', 'sorgo']
+"""
+
 import itertools
+import json
 import logging
 import string
 
+FILLER_LETTERS = '-_=+'
+
 
 def wordle(starting_word: str,
-           ins: list[str],
-           not_ins: list[str],
-           black: str,
-           grey: str = string.ascii_lowercase) -> list[str]:
+           greens: list[str],
+           oranges: list[str],
+           blacks: str = None,
+           greys: str = None,
+           use_word_list: bool = True) -> list[str]:
     """Solve the wordle puzzle.
+
+    Enter all letters you have so far in starting_word, order here does not
+    matter. After this, put all green letters that you have in the correct place
+    as a list. Or empty character list otherwise. Same again for oranges, you
+    can have multiple letters at each place here.
+    Lastly, you can either put all black letters in blacks, or if it's easier,
+    all the grey letters that haven't been tried in greys.
 
     Args:
         starting_word: The word we have so far
-        grey: All avaliable letters including green and amber ones
+        greens: An ordered list for each letter, with green letters placement
+        oranges: An ordered list for each letter, with orange letter placement
+        blacks: A string of all letters that have been ruled out
+        grey: All the untried letters
+        use_word_list: Whether to check against word list.
 
     Returns:
-        A list of all possible solutions
+        A sorted list of all possible solutions
+
+    Examples:
+        >>> wordle(starting_word='rgo',
+        ...        greens=['', '', '', '', ''],
+        ...        oranges=['g', 'r', 'og', 'o', 'r'],
+        ...        blacks='canehul')
+        ['borgo', 'forgo', 'porgy', 'sorgo']
     """
-    if black:
-        grey = set(grey) - set(black)
+    # Normalise input
+    starting_word = starting_word.lower()
+    greens = [i.lower() for i in greens]
+    oranges = [i.lower() for i in oranges]
+    blacks = blacks.lower()
+
+    if blacks:
+        greys = set(string.ascii_lowercase) - set(blacks)
+    elif greys:
+        greys = set(greys) | set(''.join(greens)) | set(''.join(oranges))
+    else:
+        greys = set(string.ascii_lowercase)
+
     words = set()
 
-    filler_letters = '-_=+'
-
-    starting_word = starting_word + filler_letters
+    # Append filler letters and trim to word size
+    starting_word += FILLER_LETTERS
     starting_word = starting_word[:5]
+
     grey_letter = ['*'] * 4
 
     for i, _ in enumerate(grey_letter):
-        if filler_letters[i] in starting_word:
-            grey_letter[i] = grey - set(not_ins[i])
+        if FILLER_LETTERS[i] in starting_word:
+            grey_letter[i] = greys - set(oranges[i])
 
     with open('wordle-allowed-guesses.json', encoding='utf-8') as file:
         allowed_words = set(json.load(file))
@@ -47,7 +89,7 @@ def wordle(starting_word: str,
                             starting_word.replace('-', let1).replace(
                                 '_', let2).replace('=', let3).replace(
                                     '+', let4))
-                        if all((a not in b) for a, b in zip(x, not_ins))
+                        if all((a not in b) for a, b in zip(x, oranges))
                     }
                     green_words = {
                         ''.join(x)
@@ -55,9 +97,11 @@ def wordle(starting_word: str,
                             starting_word.replace('-', let1).replace(
                                 '_', let2).replace('=', let3).replace(
                                     '+', let4))
-                        if all((a == b) or (b == '') for a, b in zip(x, ins))
+                        if all(b in (a, '') for a, b in zip(x, greens))
                     }
-                    new_words = orange_words & green_words & allowed_words
+                    new_words = orange_words & green_words
+                    if use_word_list:
+                        new_words &= allowed_words
                     if new_words:
                         logging.info('words added:%s', new_words)
 
