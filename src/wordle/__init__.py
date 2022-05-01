@@ -14,6 +14,7 @@ Examples:
 import itertools
 import json
 import logging
+import pathlib
 import string
 from dataclasses import dataclass
 
@@ -92,7 +93,8 @@ def solve(wordle_data: WordleData, use_word_list: bool = True) -> list[str]:
         if FILLER_LETTERS[i] in wordle_data.starting_word:
             grey_letter[i] = greys - set(wordle_data.oranges[i])
 
-    with open('wordle-allowed-guesses.json', encoding='utf-8') as file:
+    with open(pathlib.Path(__file__).with_name('word-list.json'),
+              encoding='utf-8') as file:
         allowed_words = set(json.load(file))
 
     let = [None] * 4
