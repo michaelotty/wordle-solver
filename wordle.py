@@ -11,11 +11,11 @@ Examples:
     ['borgo', 'forgo', 'porgy', 'sorgo']
 """
 
-from dataclasses import dataclass
 import itertools
 import json
 import logging
 import string
+from dataclasses import dataclass
 
 FILLER_LETTERS = '-_=+'
 
