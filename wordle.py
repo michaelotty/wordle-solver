@@ -2,6 +2,7 @@
 
 import json
 import itertools
+import logging
 import string
 
 
@@ -33,6 +34,9 @@ def wordle(starting_word: str,
         if filler_letters[i] in starting_word:
             grey_letter[i] = grey - set(not_ins[i])
 
+    with open('wordle-allowed-guesses.json', encoding='utf-8') as file:
+        allowed_words = set(json.load(file))
+
     for let1 in grey_letter[0]:
         for let2 in grey_letter[1]:
             for let3 in grey_letter[2]:
@@ -53,17 +57,10 @@ def wordle(starting_word: str,
                                     '+', let4))
                         if all((a == b) or (b == '') for a, b in zip(x, ins))
                     }
-                    words |= orange_words & green_words
+                    new_words = orange_words & green_words & allowed_words
+                    if new_words:
+                        logging.info('words added:%s', new_words)
 
-    with open('wordle-allowed-guesses.json', encoding='utf-8') as file:
-        allowed_words = set(json.load(file))
+                    words |= new_words
 
-    return sorted(words & allowed_words)
-
-
-if __name__ == "__main__":
-    print(*wordle(starting_word='forg',
-                  ins=['f', '', 'r', '', ''],
-                  not_ins=['g', 'r', 'o', '', ''],
-                  black='canehulist'),
-          sep=', ')
+    return sorted(words)
