@@ -3,13 +3,15 @@
 Contains a single function for finding wordle solutions.
 
 Examples:
-    >>> wordle(starting_word='rgo',
-    ...        greens=['', '', '', '', ''],
-    ...        oranges=['g', 'r', 'og', 'o', 'r'],
-    ...        blacks='canehul')
+    >>> solve(
+    ...       WordleData(starting_word='rgo',
+    ...                  greens=['', '', '', '', ''],
+    ...                  oranges=['g', 'r', 'og', 'o', 'r'],
+    ...                  blacks='canehul'))
     ['borgo', 'forgo', 'porgy', 'sorgo']
 """
 
+from dataclasses import dataclass
 import itertools
 import json
 import logging
@@ -18,13 +20,9 @@ import string
 FILLER_LETTERS = '-_=+'
 
 
-def wordle(starting_word: str,
-           greens: list[str],
-           oranges: list[str],
-           blacks: str = None,
-           greys: str = None,
-           use_word_list: bool = True) -> list[str]:
-    """Solve the wordle puzzle.
+@dataclass(kw_only=True)
+class WordleData:
+    """Wordle data for solver.
 
     Enter all letters you have so far in starting_word, order here does not
     matter. After this, put all green letters that you have in the correct place
@@ -39,67 +37,87 @@ def wordle(starting_word: str,
         oranges: An ordered list for each letter, with orange letter placement
         blacks: A string of all letters that have been ruled out
         grey: All the untried letters
+    """
+    starting_word: str
+    greens: list[str]
+    oranges: list[str]
+    blacks: str = None
+    greys: str = None
+
+    def __post_init__(self):
+        """Normalise input."""
+        self.starting_word = self.starting_word.lower()
+        self.greens = [i.lower() for i in self.greens]
+        self.oranges = [i.lower() for i in self.oranges]
+        self.blacks = self.blacks.lower()
+
+        # Append filler letters and trim to word size
+        self.starting_word += FILLER_LETTERS
+        self.starting_word = self.starting_word[:5]
+
+
+def solve(wordle_data: WordleData, use_word_list: bool = True) -> list[str]:
+    """Solve the wordle puzzle.
+
+    Enter the wordle data, and optionally use word list.
+
+    Args:
+        wordle_data: All the neccesery wordle data
         use_word_list: Whether to check against word list.
 
     Returns:
         A sorted list of all possible solutions
 
     Examples:
-        >>> wordle(starting_word='rgo',
-        ...        greens=['', '', '', '', ''],
-        ...        oranges=['g', 'r', 'og', 'o', 'r'],
-        ...        blacks='canehul')
+        >>> solve(
+        ...       WordleData(starting_word='rgo',
+        ...                  greens=['', '', '', '', ''],
+        ...                  oranges=['g', 'r', 'og', 'o', 'r'],
+        ...                  blacks='canehul'))
         ['borgo', 'forgo', 'porgy', 'sorgo']
     """
-    # Normalise input
-    starting_word = starting_word.lower()
-    greens = [i.lower() for i in greens]
-    oranges = [i.lower() for i in oranges]
-    blacks = blacks.lower()
-
-    if blacks:
-        greys = set(string.ascii_lowercase) - set(blacks)
+    if wordle_data.blacks:
+        greys = set(string.ascii_lowercase) - set(wordle_data.blacks)
     elif greys:
-        greys = set(greys) | set(''.join(greens)) | set(''.join(oranges))
+        greys = set(greys) | set(''.join(wordle_data.greens)) | set(''.join(
+            wordle_data.oranges))
     else:
         greys = set(string.ascii_lowercase)
 
     words = set()
 
-    # Append filler letters and trim to word size
-    starting_word += FILLER_LETTERS
-    starting_word = starting_word[:5]
-
     grey_letter = ['*'] * 4
 
     for i, _ in enumerate(grey_letter):
-        if FILLER_LETTERS[i] in starting_word:
-            grey_letter[i] = greys - set(oranges[i])
+        if FILLER_LETTERS[i] in wordle_data.starting_word:
+            grey_letter[i] = greys - set(wordle_data.oranges[i])
 
     with open('wordle-allowed-guesses.json', encoding='utf-8') as file:
         allowed_words = set(json.load(file))
 
-    for let1 in grey_letter[0]:
-        for let2 in grey_letter[1]:
-            for let3 in grey_letter[2]:
-                for let4 in grey_letter[3]:
-                    orange_words = {
+    let = [None] * 4
+
+    for let[0] in grey_letter[0]:
+        for let[1] in grey_letter[1]:
+            for let[2] in grey_letter[2]:
+                for let[3] in grey_letter[3]:
+                    new_words = {  # Orange words
                         ''.join(x)
                         for x in itertools.permutations(
-                            starting_word.replace('-', let1).replace(
-                                '_', let2).replace('=', let3).replace(
-                                    '+', let4))
-                        if all((a not in b) for a, b in zip(x, oranges))
-                    }
-                    green_words = {
+                            wordle_data.starting_word.replace('-', let[0]).
+                            replace('_', let[1]).replace('=', let[2]).replace(
+                                '+', let[3])) if all(
+                                    (a not in b)
+                                    for a, b in zip(x, wordle_data.oranges))
+                    } & {  # Green words
                         ''.join(x)
                         for x in itertools.permutations(
-                            starting_word.replace('-', let1).replace(
-                                '_', let2).replace('=', let3).replace(
-                                    '+', let4))
-                        if all(b in (a, '') for a, b in zip(x, greens))
+                            wordle_data.starting_word.replace(
+                                '-', let[0]).replace('_', let[1]).replace(
+                                    '=', let[2]).replace('+', let[3]))
+                        if all(b in (a, '')
+                               for a, b in zip(x, wordle_data.greens))
                     }
-                    new_words = orange_words & green_words
                     if use_word_list:
                         new_words &= allowed_words
                     if new_words:
