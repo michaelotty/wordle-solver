@@ -18,7 +18,7 @@ import pathlib
 import string
 from dataclasses import dataclass
 
-FILLER_LETTERS = '-_=+'
+FILLER_LETTERS = '-_=+#'
 
 
 @dataclass(kw_only=True)
@@ -87,7 +87,7 @@ def solve(wordle_data: WordleData, use_word_list: bool = True) -> list[str]:
 
     words = set()
 
-    grey_letter = ['*'] * 4
+    grey_letter = ['*'] * 5
 
     for i, _ in enumerate(grey_letter):
         if FILLER_LETTERS[i] in wordle_data.starting_word:
@@ -97,34 +97,35 @@ def solve(wordle_data: WordleData, use_word_list: bool = True) -> list[str]:
               encoding='utf-8') as file:
         allowed_words = set(json.load(file))
 
-    let = [None] * 4
+    let = [None] * 5
 
     for let[0] in grey_letter[0]:
         for let[1] in grey_letter[1]:
             for let[2] in grey_letter[2]:
                 for let[3] in grey_letter[3]:
-                    new_words = {  # Orange words
-                        ''.join(x)
-                        for x in itertools.permutations(
-                            wordle_data.starting_word.replace('-', let[0]).
-                            replace('_', let[1]).replace('=', let[2]).replace(
-                                '+', let[3])) if all(
-                                    (a not in b)
-                                    for a, b in zip(x, wordle_data.oranges))
-                    } & {  # Green words
-                        ''.join(x)
-                        for x in itertools.permutations(
-                            wordle_data.starting_word.replace(
-                                '-', let[0]).replace('_', let[1]).replace(
-                                    '=', let[2]).replace('+', let[3]))
-                        if all(b in (a, '')
-                               for a, b in zip(x, wordle_data.greens))
-                    }
-                    if use_word_list:
-                        new_words &= allowed_words
-                    if new_words:
-                        logging.info('words added:%s', new_words)
+                    for let[4] in grey_letter[4]:
+                        new_words = {  # Orange words
+                            ''.join(x)
+                            for x in itertools.permutations(
+                                wordle_data.starting_word.replace('-', let[0]).
+                                replace('_', let[1]).replace('=', let[2]).
+                                replace('+', let[3]).replace('#', let[4]))
+                            if all((a not in b)
+                                   for a, b in zip(x, wordle_data.oranges))
+                        } & {  # Green words
+                            ''.join(x)
+                            for x in itertools.permutations(
+                                wordle_data.starting_word.replace('-', let[0]).
+                                replace('_', let[1]).replace('=', let[2]).
+                                replace('+', let[3]).replace('#', let[4]))
+                            if all(b in (a, '')
+                                   for a, b in zip(x, wordle_data.greens))
+                        }
+                        if use_word_list:
+                            new_words &= allowed_words
+                        if new_words:
+                            logging.info('words added:%s', new_words)
 
-                    words |= new_words
+                        words |= new_words
 
     return sorted(words)
