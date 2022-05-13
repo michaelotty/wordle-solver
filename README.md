@@ -10,10 +10,12 @@ Computes a list of all wordle puzzle possibilities.
 ## Example
 
 ```
-words = wordle(starting_word='rgo',
-               greens=['', '', '', '', ''],
-               oranges=['g', 'r', 'og', 'o', 'r'],
-               blacks='canehul',
-               use_word_list=True)
+import wordle
+
+words = wordle.solve(
+    wordle.WordleData(starting_word='',
+                        greens=['', 'i', '', '', ''],
+                        oranges=['p', '', '', '', 's'],
+                        blacks='craneghoulm'))
 print(*words, sep=', ')
 ```
